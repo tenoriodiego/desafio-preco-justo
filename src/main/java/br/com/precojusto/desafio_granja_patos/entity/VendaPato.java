@@ -25,44 +25,32 @@ import lombok.NoArgsConstructor;
 public class VendaPato {
 
     @EmbeddedId
-    private VendaPatoId id;
+    private VendaPatoId id = new VendaPatoId();
 
+    @MapsId("vendaId") // 🔹 Diz que este ManyToOne usa o campo vendaId da chave composta
     @ManyToOne(fetch = FetchType.LAZY)
-    @MapsId("vendaId")
-    @JoinColumn(name = "venda_id")
+    @JoinColumn(name = "venda_id", nullable = false)
     private Venda venda;
 
+    @MapsId("patoId") // 🔹 Mesmo para o patoId
     @ManyToOne(fetch = FetchType.LAZY)
-    @MapsId("patoId")
-    @JoinColumn(name = "pato_id")
+    @JoinColumn(name = "pato_id", nullable = false)
     private Pato pato;
 
-    @Column(name = "preco_unitario", precision = 12, scale = 2, nullable = false)
+    @Column(name = "preco_unitario", precision = 12, scale = 2)
     private BigDecimal precoUnitario;
 
+    // Classe interna para a chave composta
     @Embeddable
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
     public static class VendaPatoId implements Serializable {
+        @Column(name = "venda_id")
         private Long vendaId;
+
+        @Column(name = "pato_id")
         private Long patoId;
-
-        public VendaPatoId() {
-        }
-
-        public Long getVendaId() {
-            return vendaId;
-        }
-
-        public void setVendaId(Long vendaId) {
-            this.vendaId = vendaId;
-        }
-
-        public Long getPatoId() {
-            return patoId;
-        }
-
-        public void setPatoId(Long patoId) {
-            this.patoId = patoId;
-        }
 
         @Override
         public boolean equals(Object o) {
@@ -71,14 +59,13 @@ public class VendaPato {
             if (!(o instanceof VendaPatoId))
                 return false;
             VendaPatoId that = (VendaPatoId) o;
-            return Objects.equals(getVendaId(), that.getVendaId()) &&
-                    Objects.equals(getPatoId(), that.getPatoId());
+            return Objects.equals(vendaId, that.vendaId) &&
+                    Objects.equals(patoId, that.patoId);
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(getVendaId(), getPatoId());
+            return Objects.hash(vendaId, patoId);
         }
     }
-
 }

@@ -1,0 +1,20 @@
+services:
+  api:
+    build: .
+    depends_on:
+      - postgresql
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgresql:5432/patos_db
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: root
+    ports:
+      - "8080:8080"
+
+  postgresql:
+    image: bitnami/postgresql:17.4.0
+    environment:
+      POSTGRESQL_USERNAME: postgres
+      POSTGRESQL_PASSWORD: root
+      POSTGRESQL_DATABASE: patos_db
+    ports:
+      - "5432:5432"

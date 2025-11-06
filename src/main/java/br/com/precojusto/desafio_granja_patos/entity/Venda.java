@@ -31,11 +31,11 @@ public class Venda {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(optional = false, fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "cliente_id")
     private Cliente cliente;
 
-    @ManyToOne(optional = false, fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "vendedor_id")
     private Vendedor vendedor;
 
@@ -48,7 +48,7 @@ public class Venda {
     @Column(name = "desconto_aplicado", precision = 12, scale = 2)
     private BigDecimal descontoAplicado = BigDecimal.ZERO;
 
-    @OneToMany(mappedBy = "venda", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "venda", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<VendaPato> itens = new HashSet<>();
 
     @Column(name = "created_at")

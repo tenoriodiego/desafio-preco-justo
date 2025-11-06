@@ -1,4 +1,4 @@
-package br.com.precojusto.desafio_granja_patos.demo;
+package br.com.precojusto.desafio_granja_patos;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

@@ -24,16 +24,21 @@ public class PatoService {
         Pato p = new Pato();
         p.setNome(dto.getNome());
         p.setFilhoCount(dto.getFilhoCount());
+
+        // Só tenta buscar mãe se o ID for informado e existir
         if (dto.getMaeId() != null) {
-            Pato mae = patoRepository.findById(dto.getMaeId())
-                    .orElseThrow(() -> new NotFoundException("Mãe não encontrada"));
-            p.setMae(mae);
+            patoRepository.findById(dto.getMaeId())
+                    .ifPresentOrElse(
+                            p::setMae,
+                            () -> {
+                                throw new NotFoundException("Mãe não encontrada");
+                            });
         }
+
         p.setPrecoCateg(categFromFilhos(p.getFilhoCount()));
         Pato saved = patoRepository.save(p);
-        dto.setId(saved.getId());
-        dto.setVendido(saved.isVendido());
-        return dto;
+
+        return toDto(saved);
     }
 
     public List<PatoDto> listar(Boolean vendido) {
