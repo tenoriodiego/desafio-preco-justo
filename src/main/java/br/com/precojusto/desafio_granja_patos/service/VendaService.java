@@ -1,6 +1,7 @@
 package br.com.precojusto.desafio_granja_patos.service;
 
 import java.math.BigDecimal;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -96,17 +97,23 @@ public class VendaService {
         return resp;
     }
 
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
     public List<VendaResponse> listarVendas() {
-        return vendaRepository.findAll().stream().map(v -> {
+        return vendaRepository.findAllWithItens().stream().map(v -> {
             VendaResponse r = new VendaResponse();
             r.setId(v.getId());
-            r.setClienteId(v.getCliente().getId());
-            r.setVendedorId(v.getVendedor().getId());
+            r.setClienteId(v.getCliente() != null ? v.getCliente().getId() : null);
+            r.setVendedorId(v.getVendedor() != null ? v.getVendedor().getId() : null);
             r.setDataVenda(v.getDataVenda());
             r.setValorTotal(v.getValorTotal());
             r.setDescontoAplicado(v.getDescontoAplicado());
-            r.setPatoIds(v.getItens().stream().map(i -> i.getPato().getId()).collect(Collectors.toList()));
+            r.setPatoIds(v.getItens() == null ? Collections.emptyList()
+                    : v.getItens().stream()
+                            .filter(i -> i.getPato() != null)
+                            .map(i -> i.getPato().getId())
+                            .collect(Collectors.toList()));
             return r;
         }).collect(Collectors.toList());
     }
+
 }

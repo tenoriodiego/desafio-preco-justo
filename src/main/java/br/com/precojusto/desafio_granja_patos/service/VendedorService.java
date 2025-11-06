@@ -47,8 +47,9 @@ public class VendedorService {
     }
 
     public void deletar(Long id) {
-        if (vendaRepository.existsById(id))
+        if (vendaRepository.existsByVendedorId(id)) {
             throw new IllegalStateException("Não é possível excluir vendedor com vendas");
+        }
         vendedorRepository.deleteById(id);
     }
 

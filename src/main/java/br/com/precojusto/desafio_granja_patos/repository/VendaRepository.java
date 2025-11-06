@@ -36,17 +36,13 @@ public interface VendaRepository extends JpaRepository<Venda, Long> {
     List<Object[]> aggregateByVendedor(@Param("inicio") OffsetDateTime inicio,
             @Param("fim") OffsetDateTime fim);
 
-    // NOVO: Busca vendas apenas com cliente e vendedor
     @Query("SELECT v FROM Venda v LEFT JOIN FETCH v.cliente LEFT JOIN FETCH v.vendedor WHERE v.dataVenda BETWEEN :inicio AND :fim")
     List<Venda> findVendasComClienteVendedor(@Param("inicio") OffsetDateTime inicio,
             @Param("fim") OffsetDateTime fim);
 
-    // NOVO: Busca todos os itens com pato para uma lista de vendas
     @Query("SELECT vp FROM VendaPato vp JOIN FETCH vp.pato WHERE vp.venda.id IN :vendaIds")
     List<VendaPato> findItensComPatoPorVendaIds(@Param("vendaIds") List<Long> vendaIds);
 
-    // NOVO MÉTODO: Busca todos os itens de venda com seus relacionamentos em uma
-    // única query
     @Query("""
             SELECT vp FROM VendaPato vp
             JOIN FETCH vp.venda v
@@ -57,5 +53,17 @@ public interface VendaRepository extends JpaRepository<Venda, Long> {
             """)
     List<VendaPato> findItensComPatoPorPeriodo(@Param("inicio") OffsetDateTime inicio,
             @Param("fim") OffsetDateTime fim);
+
+    boolean existsByVendedorId(Long vendedorId);
+
+    @Query("""
+                SELECT DISTINCT v
+                FROM Venda v
+                LEFT JOIN FETCH v.itens i
+                LEFT JOIN FETCH i.pato
+                LEFT JOIN FETCH v.cliente
+                LEFT JOIN FETCH v.vendedor
+            """)
+    List<Venda> findAllWithItens();
 
 }

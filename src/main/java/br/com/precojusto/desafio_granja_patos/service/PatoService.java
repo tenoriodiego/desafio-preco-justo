@@ -1,11 +1,11 @@
 package br.com.precojusto.desafio_granja_patos.service;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 
 import br.com.precojusto.desafio_granja_patos.dto.PatoDto;
+import br.com.precojusto.desafio_granja_patos.dto.PatoVendidoDto;
 import br.com.precojusto.desafio_granja_patos.entity.Pato;
 import br.com.precojusto.desafio_granja_patos.exception.NotFoundException;
 import br.com.precojusto.desafio_granja_patos.repository.PatoRepository;
@@ -24,6 +24,7 @@ public class PatoService {
         Pato p = new Pato();
         p.setNome(dto.getNome());
         p.setFilhoCount(dto.getFilhoCount());
+        p.setVendido(dto.isVendido());
 
         // Só tenta buscar mãe se o ID for informado e existir
         if (dto.getMaeId() != null) {
@@ -41,11 +42,8 @@ public class PatoService {
         return toDto(saved);
     }
 
-    public List<PatoDto> listar(Boolean vendido) {
-        return patoRepository.findAll().stream()
-                .filter(p -> vendido == null || p.isVendido() == vendido)
-                .map(this::toDto)
-                .collect(Collectors.toList());
+    public List<PatoVendidoDto> listarPatosVendidos() {
+        return patoRepository.findPatosVendidosComDetalhes();
     }
 
     public PatoDto buscarPorId(Long id) {

@@ -8,12 +8,9 @@ import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -61,10 +58,10 @@ public class RelatorioVendaService {
                 ? OffsetDateTime.now()
                 : dataFinal.atTime(LocalTime.MAX).atZone(ZoneId.systemDefault()).toOffsetDateTime();
 
-        // SOLUÇÃO DEFINITIVA: Busca apenas os dados necessários em formato de DTO
+        // Busca os dados necessários
         List<VendaPato> todosItens = vendaRepository.findItensComPatoPorPeriodo(inicio, fim);
 
-        // Cria mapa direto de patoId -> VendaPato (sem manipular entidades JPA)
+        // Cria mapa direto de patoId -> VendaPato
         Map<Long, VendaPato> vendaPorPato = todosItens.stream()
                 .filter(vp -> vp.getPato() != null && vp.getPato().getId() != null)
                 .collect(Collectors.toMap(
@@ -72,20 +69,21 @@ public class RelatorioVendaService {
                         vp -> vp,
                         (existing, replacement) -> existing));
 
-        // Busca todos os patos
-        List<Pato> todos = patoRepository.findAll();
+        // **CORREÇÃO: Busca todos os patos com as mães carregadas**
+        List<Pato> todos = patoRepository.findAllWithMae();
 
-        // Agrupa filhos por mãe
+        // **CORREÇÃO: Agrupa filhos por mãe usando os dados já carregados**
         Map<Long, List<Pato>> filhosMap = todos.stream()
-                .filter(p -> p.getMae() != null && p.getMae().getId() != null)
+                .filter(p -> p.getMae() != null)
                 .collect(Collectors.groupingBy(p -> p.getMae().getId()));
 
-        // Matriarcas (sem mãe)
-        List<Pato> matriarcas = patoRepository.findByMaeIsNull();
-        matriarcas.sort(Comparator.comparing(Pato::getNome));
+        // **CORREÇÃO: Matriarcas são os patos sem mãe da lista completa**
+        List<Pato> matriarcas = todos.stream()
+                .filter(p -> p.getMae() == null)
+                .sorted(Comparator.comparing(Pato::getNome))
+                .collect(Collectors.toList());
 
-        // ======== GERAÇÃO DO EXCEL (MANTIDO IGUAL) ========
-
+        // ======== GERAÇÃO DO EXCEL ========
         try (SXSSFWorkbook wb = new SXSSFWorkbook(100);
                 ByteArrayOutputStream bos = new ByteArrayOutputStream()) {
 
@@ -120,35 +118,41 @@ public class RelatorioVendaService {
             CellStyle dateStyle = wb.createCellStyle();
             dateStyle.setDataFormat(df.getFormat("dd/MM/yyyy HH:mm"));
 
-            // ======= Cabeçalhos do relatório =======
+            // ======= CABEÇALHOS CORRIGIDOS =======
+            // Linha 1: Título principal (A1)
             Row r0 = sheet.createRow(0);
             Cell c0 = r0.createCell(0);
             c0.setCellValue("RELATÓRIO DE VENDA");
             c0.setCellStyle(titleStyle);
 
+            // Linha 2: "Gerado em:" e data (A2 e B2)
             Row r1 = sheet.createRow(1);
             r1.createCell(0).setCellValue("Gerado em:");
             r1.createCell(1).setCellValue(OffsetDateTime.now()
                     .format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")));
 
+            // Linha 3: "Data Inicial" e "Data final" na mesma linha (D2 e H2)
             Row r2 = sheet.createRow(2);
-            r2.createCell(0).setCellValue("Data inicial:");
-            r2.createCell(1).setCellValue(
+            r2.createCell(3).setCellValue("Data Inicial"); // Coluna D (índice 3)
+            r2.createCell(4).setCellValue( // Coluna E (índice 4)
                     dataInicial == null ? "-" : dataInicial.format(DateTimeFormatter.ofPattern("dd/MM/yyyy")));
-            r2.createCell(2).setCellValue("Data final:");
-            r2.createCell(3).setCellValue(
+            r2.createCell(6).setCellValue("Data final"); // Coluna G (índice 6)
+            r2.createCell(7).setCellValue( // Coluna H (índice 7)
                     dataFinal == null ? "-" : dataFinal.format(DateTimeFormatter.ofPattern("dd/MM/yyyy")));
+
+            // Linha 4: Vazia (espaçamento)
+            sheet.createRow(3);
 
             // ======= Cabeçalho das colunas =======
             String[] cols = { "Nome", "Status", "Cliente", "Tipo do Cliente", "Valor", "Data/hora", "Vendedor" };
-            Row header = sheet.createRow(4);
+            Row header = sheet.createRow(4); // Linha 5 (índice 4)
             for (int i = 0; i < cols.length; i++) {
                 Cell cell = header.createCell(i);
                 cell.setCellValue(cols[i]);
                 cell.setCellStyle(headerStyle);
             }
 
-            AtomicInteger rowIndex = new AtomicInteger(5);
+            AtomicInteger rowIndex = new AtomicInteger(5); // Começa na linha 6 (índice 5)
 
             // ======= Escrita recursiva dos patos =======
             class Writer {
@@ -198,8 +202,8 @@ public class RelatorioVendaService {
                             r.createCell(i).setCellValue("-");
                     }
 
-                    // Filhos
-                    List<Pato> filhos = new ArrayList<>(filhosMap.getOrDefault(p.getId(), Collections.emptyList()));
+                    // **CORREÇÃO: Busca os filhos do mapa (agora deve funcionar)**
+                    List<Pato> filhos = filhosMap.getOrDefault(p.getId(), Collections.emptyList());
                     filhos.sort(Comparator.comparing(Pato::getNome));
                     for (Pato f : filhos)
                         write(f, nivel + 1);
